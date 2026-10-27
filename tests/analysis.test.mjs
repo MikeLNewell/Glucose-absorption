@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {computeAnalysis,positiveArea,parseCSV,makeCSV,CSV_COLUMNS,exportRows,validateImportRows,classSummary} from '../analysis.mjs';
+const m = a => a.map((glucose,i)=>({glucose:String(glucose),actual:String(i*15)}));
+assert.equal(positiveArea(0,-2,10,2),5);
+assert.equal(positiveArea(0,2,10,-2),5);
+assert.equal(positiveArea(0,1,10,3),20);
+assert.equal(positiveArea(0,-1,10,-3),0);
+let a=computeAnalysis(m([5,6,7,6,5,5,5]));
+assert.equal(a.baseline,5);assert.equal(a.peak,7);assert.equal(a.excursion,2);assert.equal(a.peakTime,30);assert.equal(a.iauc,60);assert.equal(a.full,true);
+a=computeAnalysis(m([5,6,4,5,5,5,5]));assert.equal(a.iauc,11.25);
+a=computeAnalysis(m([5,5,5,5,5,5,5]));assert.equal(a.iauc,0);
+a=computeAnalysis(m([5,4,3,4,4,4,4]));assert.equal(a.peak,5);assert.equal(a.excursion,0);assert.equal(a.iauc,0);
+a=computeAnalysis(m([5,6,7,6,5,5,'']));assert.equal(a.full,false);assert.equal(a.iauc,null);
+a=computeAnalysis(m([5,6,7,6,5,5,5.5]).map((x,i)=>({...x,actual:i===6?'100':x.actual})));assert.equal(a.full,true);assert.ok(a.iauc>50&&a.iauc<65);
+const session={sessionId:'2026-X',date:'2026-10-26',team:'"A, B"',participantId:'P01',food:'Bread',carbohydrate:25,portion:50,unit:'g',measurements:m([5,6,7,6,5,5,5])};
+const rows=exportRows(session);const csv=makeCSV(rows,CSV_COLUMNS);const imported=parseCSV(csv);assert.equal(imported.length,7);assert.equal(imported[0].team,'"A, B"');const groups=validateImportRows(imported);assert.equal(groups.length,1);assert.equal(classSummary(groups)[0].n,1);assert.equal(classSummary(groups)[0].iauc,60);
+assert.throws(()=>validateImportRows([imported[0],imported[0]]));
+console.log('Analysis, CSV and integration tests passed.');
